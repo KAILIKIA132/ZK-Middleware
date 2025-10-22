@@ -1,6 +1,7 @@
 import logging
 import threading
 import time
+import os
 from flask import Flask, request, jsonify, render_template
 import yaml
 import requests
@@ -10,9 +11,44 @@ from printer import TicketPrinter
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("zk-middleware")
 
-# Load config
-with open("config.example.yml", "r") as f:
-    cfg = yaml.safe_load(f)
+# Load config from environment variables or config file
+device_ip = os.environ.get("DEVICE_IP", "192.168.1.100")
+device_port = int(os.environ.get("DEVICE_PORT", "4370"))
+device_timeout = int(os.environ.get("DEVICE_TIMEOUT", "10"))
+
+school_api_base_url = os.environ.get("SCHOOL_API_BASE_URL", "https://school.example.com/api")
+school_api_key = os.environ.get("SCHOOL_API_KEY", "REPLACE_WITH_SECRET")
+
+printer_type = os.environ.get("PRINTER_TYPE", "network")
+printer_host = os.environ.get("PRINTER_HOST", "192.168.1.200")
+printer_port = int(os.environ.get("PRINTER_PORT", "9100"))
+
+listen_host = os.environ.get("LISTEN_HOST", "0.0.0.0")
+listen_port = int(os.environ.get("PORT", "5000"))
+
+# Create config dictionary
+cfg = {
+    "device": {
+        "ip": device_ip,
+        "port": device_port,
+        "timeout": device_timeout
+    },
+    "school_api": {
+        "base_url": school_api_base_url,
+        "api_key": school_api_key
+    },
+    "printer": {
+        "type": printer_type,
+        "network": {
+            "host": printer_host,
+            "port": printer_port
+        }
+    },
+    "app": {
+        "listen_host": listen_host,
+        "listen_port": listen_port
+    }
+}
 
 device_cfg = cfg["device"]
 api_cfg = cfg["school_api"]
@@ -129,6 +165,77 @@ def test_error():
 @app.route("/admin", methods=["GET"])
 def admin():
     return render_template('admin.html')
+
+@app.route("/students/<student_id>/fees", methods=["GET"])
+def student_fees(student_id):
+    """
+    Endpoint for checking student payment status
+    """
+    try:
+        # In a real implementation, this would check the actual payment status
+        # For now, we'll return mock data
+        mock_data = {
+            "1": {"paid": True, "details": "Lunch payment confirmed", "amount": 5.50},
+            "2": {"paid": True, "details": "Lunch payment confirmed", "amount": 5.50},
+            "3": {"paid": False, "details": "Lunch payment not found", "amount": 5.50}
+        }
+        
+        if student_id in mock_data:
+            return jsonify(mock_data[student_id])
+        else:
+            return jsonify({"paid": False, "details": "Student not found"}), 404
+    except Exception as e:
+        logger.exception("Error checking student fees: %s", e)
+        return jsonify({"paid": False, "details": "Internal server error"}), 500
+
+@app.route("/attendance", methods=["POST"])
+def log_attendance():
+    """
+    Endpoint for logging attendance
+    """
+    try:
+        data = request.json or {}
+        student_id = data.get("student_id")
+        timestamp = data.get("timestamp")
+        device_id = data.get("device_id", "unknown")
+        
+        if not student_id:
+            return jsonify({"error": "student_id is required"}), 400
+            
+        logger.info("Attendance logged for student %s at %s from device %s", 
+                   student_id, timestamp, device_id)
+        
+        return jsonify({"message": "Attendance logged successfully"}), 201
+    except Exception as e:
+        logger.exception("Error logging attendance: %s", e)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route("/print-ticket", methods=["POST"])
+def print_ticket():
+    """
+    Endpoint for printing tickets
+    """
+    try:
+        data = request.json or {}
+        student_id = data.get("student_id")
+        student_name = data.get("student_name", "Unknown Student")
+        meal_type = data.get("meal_type", "Lunch")
+        amount = data.get("amount", 0.0)
+        timestamp = data.get("timestamp")
+        
+        if not student_id:
+            return jsonify({"error": "student_id is required"}), 400
+            
+        details = f"{meal_type} - R{amount:.2f}"
+        ok = printer.print_ticket(student_name, student_id, details)
+        
+        if ok:
+            return jsonify({"message": "Ticket printed successfully"}), 200
+        else:
+            return jsonify({"error": "Failed to print ticket"}), 500
+    except Exception as e:
+        logger.exception("Error printing ticket: %s", e)
+        return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == "__main__":
     # Connect device before starting
