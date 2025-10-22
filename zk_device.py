@@ -1,5 +1,19 @@
 import logging
-from zk import ZK, const
+# Try different import methods for pyzk
+try:
+    from zk import ZK, const
+except ImportError:
+    try:
+        from pyzk.zk import ZK, const
+    except ImportError:
+        try:
+            from pyzk import ZK, const
+        except ImportError:
+            # Fallback to mock implementation for development
+            ZK = None
+            const = None
+            logging.warning("pyzk library not available, using mock implementation")
+
 import time
 
 logger = logging.getLogger(__name__)
@@ -9,11 +23,20 @@ class ZKDevice:
         self.ip = ip
         self.port = port
         self.timeout = timeout
-        self.zk = ZK(self.ip, port=self.port, timeout=self.timeout, password=0)
+        # Only create ZK instance if the library is available
+        if ZK is not None:
+            self.zk = ZK(self.ip, port=self.port, timeout=self.timeout, password=0)
+        else:
+            self.zk = None
         self.conn = None
         self._connected = False
 
     def connect(self):
+        # Return False if pyzk is not available
+        if self.zk is None:
+            logger.warning("pyzk library not available, cannot connect to device")
+            return False
+            
         try:
             self.conn = self.zk.connect()
             if self.conn:
@@ -32,8 +55,9 @@ class ZKDevice:
 
     def disconnect(self):
         try:
-            if self.conn:
+            if self.conn and hasattr(self.conn, 'enable_device'):
                 self.conn.enable_device()
+            if self.conn and hasattr(self.conn, 'disconnect'):
                 self.conn.disconnect()
         except Exception as e:
             logger.exception("Error disconnecting from ZK device: %s", e)
@@ -45,11 +69,16 @@ class ZKDevice:
         """
         Returns list of user objects (uid, name, user_id)
         """
+        # Return empty list if pyzk is not available
+        if self.zk is None:
+            logger.warning("pyzk library not available, returning empty user list")
+            return []
+            
         if not self._connected:
             if not self.connect():
                 return []
         try:
-            if self.conn:
+            if self.conn and hasattr(self.conn, 'get_users'):
                 return self.conn.get_users()
             else:
                 return []
@@ -63,11 +92,16 @@ class ZKDevice:
         """
         Pull attendance logs from the device. Many devices have get_attendance() / get_logs().
         """
+        # Return empty list if pyzk is not available
+        if self.zk is None:
+            logger.warning("pyzk library not available, returning empty attendance list")
+            return []
+            
         if not self._connected:
             if not self.connect():
                 return []
         try:
-            if self.conn:
+            if self.conn and hasattr(self.conn, 'get_attendance'):
                 logs = self.conn.get_attendance()
                 # logs are typically tuples or objects: (uid, timestamp, status, punch)
                 return logs
@@ -84,11 +118,16 @@ class ZKDevice:
         For devices supporting live capture, try live_capture (pyzk exposes it)
         Note: behavior depends on device model and pyzk compatibility.
         """
+        # Return None if pyzk is not available
+        if self.zk is None:
+            logger.warning("pyzk library not available, live capture not supported")
+            return None
+            
         if not self._connected:
             if not self.connect():
                 return None
         try:
-            if self.conn:
+            if self.conn and hasattr(self.conn, 'live_capture'):
                 return self.conn.live_capture(timeout)
             else:
                 return None
@@ -103,6 +142,11 @@ class ZKDevice:
         Not all devices support display message via pyzk. This is illustrative.
         If pyzk lacks command, use vendor SDK.
         """
+        # Return False if pyzk is not available
+        if self.zk is None:
+            logger.warning("pyzk library not available, cannot send display message")
+            return False
+            
         if not self._connected:
             return False
             

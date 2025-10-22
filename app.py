@@ -5,8 +5,14 @@ import os
 from flask import Flask, request, jsonify, render_template
 import yaml
 import requests
-from zk_device import ZKDevice
-from printer import TicketPrinter
+# Import our device and printer modules with error handling
+try:
+    from zk_device import ZKDevice
+    from printer import TicketPrinter
+except ImportError as e:
+    logging.warning("Failed to import device/printer modules: %s", e)
+    ZKDevice = None
+    TicketPrinter = None
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("zk-middleware")
@@ -50,7 +56,7 @@ cfg = {
     }
 }
 
-# Initialize services
+# Initialize services with error handling
 device_cfg = cfg["device"]
 api_cfg = cfg["school_api"]
 printer_cfg = cfg.get("printer", {})
@@ -62,10 +68,18 @@ printer = None
 def init_services():
     """Initialize services lazily to avoid issues with worker processes"""
     global zk, printer
-    if zk is None:
-        zk = ZKDevice(device_cfg["ip"], port=device_cfg.get("port", 4370), timeout=device_cfg.get("timeout", 10))
-    if printer is None:
-        printer = TicketPrinter(printer_cfg)
+    if zk is None and ZKDevice is not None:
+        try:
+            zk = ZKDevice(device_cfg["ip"], port=device_cfg.get("port", 4370), timeout=device_cfg.get("timeout", 10))
+        except Exception as e:
+            logger.error("Failed to initialize ZKDevice: %s", e)
+            zk = None
+    if printer is None and TicketPrinter is not None:
+        try:
+            printer = TicketPrinter(printer_cfg)
+        except Exception as e:
+            logger.error("Failed to initialize TicketPrinter: %s", e)
+            printer = None
 
 app = Flask(__name__, template_folder='templates')
 
@@ -126,16 +140,24 @@ def handle_log_entry(log):
         if res.get("paid"):
             details = res.get("details", "Lunch payment confirmed")
             # Print ticket
-            ok = printer.print_ticket(student_name=name, student_id=student_id, details=details)
-            if ok:
-                logger.info("Ticket printed for %s", student_id)
-                # optionally send device display success
-                zk.send_display_message("Access granted - Ticket printed")
+            if printer is not None:
+                ok = printer.print_ticket(student_name=name, student_id=student_id, details=details)
+                if ok:
+                    logger.info("Ticket printed for %s", student_id)
+                    # optionally send device display success
+                    if zk is not None:
+                        zk.send_display_message("Access granted - Ticket printed")
+                else:
+                    logger.warning("Failed to print ticket for %s", student_id)
+            else:
+                logger.warning("Printer not available, skipping ticket print for %s", student_id)
         else:
             # send error to device and log
             reason = res.get("error", "Unpaid")
-            zk.send_display_message("Fee unpaid. Contact admin.")
-            printer.print_error("Fee not paid for today's meal")
+            if zk is not None:
+                zk.send_display_message("Fee unpaid. Contact admin.")
+            if printer is not None:
+                printer.print_error("Fee not paid for today's meal")
             logger.info("Student %s not paid: %s", student_id, reason)
     except Exception as e:
         logger.exception("Error processing log: %s", e)
@@ -145,6 +167,11 @@ def polling_loop(poll_interval=5):
     # Initialize services
     init_services()
     
+    # Skip polling if ZK device is not available
+    if zk is None:
+        logger.warning("ZK device not available, skipping polling loop")
+        return
+        
     logger.info("Starting device polling loop")
     while True:
         try:
@@ -176,6 +203,9 @@ def test_print():
     # Initialize services if not already done
     init_services()
     
+    if printer is None:
+        return jsonify({"printed": False, "error": "Printer not available"}), 500
+    
     payload = request.json or {}
     student_name = payload.get("name", "Test Student")
     student_id = payload.get("id", "000")
@@ -187,6 +217,9 @@ def test_print():
 def test_error():
     # Initialize services if not already done
     init_services()
+    
+    if printer is None:
+        return jsonify({"printed": False, "error": "Printer not available"}), 500
     
     payload = request.json or {}
     message = payload.get("message", "Test error message")
@@ -248,6 +281,9 @@ def print_ticket():
     """
     # Initialize services if not already done
     init_services()
+    
+    if printer is None:
+        return jsonify({"error": "Printer not available"}), 500
     
     try:
         data = request.json or {}

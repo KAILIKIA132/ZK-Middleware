@@ -1,6 +1,7 @@
 Flask==2.3.3
 requests==2.31.0
-pyzk==0.5.0
+# Using a more stable version of pyzk
+pyzk==0.9.1
 python-escpos==3.0.0
 PyYAML==6.0
 gunicorn==22.0.0
