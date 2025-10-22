@@ -1,40 +1,51 @@
 #!/bin/bash
+
 # Startup script for ZK Middleware
 
-# Check if config file exists
-if [ ! -f "config.yml" ]; then
-    echo "Error: config.yml not found!"
-    echo "Please copy config.example.yml to config.yml and configure it."
+echo "Starting ZK Middleware..."
+echo "======================"
+
+# Check if we're in the right directory
+if [ ! -f "app.py" ]; then
+    echo "Error: app.py not found. Please run this script from the zk_middleware directory."
     exit 1
 fi
 
-# Validate configuration
-echo "Validating configuration..."
-python validate_config.py
-if [ $? -ne 0 ]; then
-    echo "Configuration validation failed!"
-    exit 1
-fi
+# Set default environment variables if not already set
+export PORT=${PORT:-5000}
+export DEVICE_IP=${DEVICE_IP:-192.168.1.100}
+export SCHOOL_API_BASE_URL=${SCHOOL_API_BASE_URL:-https://school.example.com/api}
+export PRINTER_HOST=${PRINTER_HOST:-192.168.1.200}
+
+echo "Environment variables:"
+echo "  PORT: $PORT"
+echo "  DEVICE_IP: $DEVICE_IP"
+echo "  SCHOOL_API_BASE_URL: $SCHOOL_API_BASE_URL"
+echo "  PRINTER_HOST: $PRINTER_HOST"
 
 # Check if running in Docker
 if [ -f /.dockerenv ]; then
-    echo "Starting ZK Middleware in Docker container..."
-    exec gunicorn -b 0.0.0.0:5000 app:app --workers 3
+    echo "Running in Docker container"
+    exec gunicorn -b 0.0.0.0:$PORT app:app --workers 1 --timeout 120
 else
-    echo "Starting ZK Middleware..."
     # Check if virtual environment exists
     if [ -d "venv" ]; then
         echo "Activating virtual environment..."
         source venv/bin/activate
     fi
     
-    # Install dependencies if not already installed
+    # Check if dependencies are installed
     if ! python -c "import flask" 2>/dev/null; then
         echo "Installing dependencies..."
         pip install -r requirements.txt
     fi
     
-    # Start the application
     echo "Starting application..."
-    python app.py
+    if command -v gunicorn &> /dev/null; then
+        echo "Using gunicorn..."
+        gunicorn -b 0.0.0.0:$PORT app:app --workers 1 --timeout 120
+    else
+        echo "Using development server..."
+        python app.py
+    fi
 fi

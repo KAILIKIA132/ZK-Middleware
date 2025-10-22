@@ -1,101 +1,109 @@
-# ZKTeco SpeedFace M4 Middleware
+# ZK Middleware for Canteen Management System
 
-A Python middleware that integrates a ZKTeco SpeedFace M4 biometric access device with a school management system via REST API. The system scans student faces, checks payment status, prints tickets for paid students, and shows errors for unpaid students.
+A Python middleware that integrates ZKTeco SpeedFace M4 biometric devices with school management systems for cafeteria access control.
 
 ## Features
 
-- Connects to ZKTeco SpeedFace M4 device via TCP/IP
-- Polls device for attendance/logs or uses live capture
-- Verifies student payment status via REST API
-- Prints tickets for students who have paid
-- Displays error messages for students who haven't paid
-- Dockerized for easy deployment
+- **Biometric Integration**: Connects to ZKTeco SpeedFace M4 devices for face recognition
+- **Payment Verification**: Integrates with school management systems via REST API
+- **Ticket Printing**: Controls network thermal printers for meal tickets
+- **Access Control**: Grants or denies cafeteria access based on payment status
+- **Monitoring**: Provides real-time system status and logging
+- **Web Interface**: Admin dashboard for system monitoring
 
-## Requirements
+## Prerequisites
 
-- Python 3.7+
-- ZKTeco SpeedFace M4 device on the same network
-- Network thermal printer supporting ESC-POS
-- School management system with REST API
+- Python 3.9+
+- ZKTeco SpeedFace M4 device
+- Network thermal printer (ESC/POS compatible)
+- Access to school management system API
 
 ## Installation
 
-1. Clone this repository
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+### Using pip
 
-3. Configure the application by copying `config.example.yml` to `config.yml` and updating the values:
-   ```yaml
-   device:
-     ip: "192.168.1.100"  # IP of your SpeedFace M4 device
-     port: 4370
-     timeout: 10
+```bash
+pip install -r requirements.txt
+```
 
-   school_api:
-     base_url: "https://school.example.com/api"
-     api_key: "YOUR_API_KEY"
+### Using Docker
 
-   printer:
-     type: "network"  # or "local"
-     network:
-       host: "192.168.1.200"  # IP of your thermal printer
-       port: 9100
+```bash
+docker build -t zk-middleware .
+docker run -p 5000:5000 zk-middleware
+```
 
-   app:
-     listen_host: "0.0.0.0"
-     listen_port: 5000
-   ```
+## Configuration
 
-## Usage
+Set the following environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DEVICE_IP` | IP address of ZKTeco device | `192.168.1.100` |
+| `DEVICE_PORT` | Port of ZKTeco device | `4370` |
+| `DEVICE_TIMEOUT` | Connection timeout (seconds) | `10` |
+| `SCHOOL_API_BASE_URL` | School management system API URL | `https://school.example.com/api` |
+| `SCHOOL_API_KEY` | API key for school system | `REPLACE_WITH_SECRET` |
+| `PRINTER_TYPE` | Printer type (`network` or `local`) | `network` |
+| `PRINTER_HOST` | Printer IP address | `192.168.1.200` |
+| `PRINTER_PORT` | Printer port | `9100` |
+| `LISTEN_HOST` | Host to bind to | `0.0.0.0` |
+| `PORT` | Port to listen on | `5000` |
+
+## API Endpoints
+
+- `GET /health` - System health check
+- `GET /students/{id}/fees` - Check student payment status
+- `POST /attendance` - Log attendance
+- `POST /print-ticket` - Print meal ticket
+- `POST /test-print` - Test printer
+- `POST /test-error` - Test error printing
+- `GET /admin` - Admin dashboard
+
+## Deployment
+
+### Render
+
+1. Fork this repository
+2. Create a new Web Service on Render
+3. Set the root directory to `zk_middleware`
+4. Use the following commands:
+   - Build: `pip install -r requirements.txt`
+   - Start: `gunicorn -b 0.0.0.0:10000 app:app --workers 1 --timeout 120`
+5. Add environment variables as needed
+
+### Docker
+
+```bash
+docker build -t zk-middleware .
+docker run -d -p 5000:5000 \
+  -e DEVICE_IP=192.168.1.100 \
+  -e SCHOOL_API_BASE_URL=https://your-school-api.com/api \
+  -e PRINTER_HOST=192.168.1.200 \
+  zk-middleware
+```
+
+## Development
 
 ### Running locally
 
 ```bash
+export PORT=5000
 python app.py
 ```
 
-### Running with Docker
+### Running with Gunicorn
 
 ```bash
-docker build -t zk-middleware:latest .
-docker run -v $(pwd)/config.yml:/app/config.example.yml -p 5000:5000 zk-middleware:latest
+gunicorn -b 0.0.0.0:5000 app:app --workers 1 --timeout 120
 ```
 
-## API Endpoints
+## Testing
 
-- `GET /health` - Health check endpoint
-- `POST /test-print` - Test printing functionality
-- `POST /test-error` - Test error message printing
+```bash
+python -m pytest tests/
+```
 
-## How it works
+## License
 
-1. The middleware connects to the SpeedFace M4 device
-2. It polls the device for attendance logs or uses live capture
-3. When a face is scanned, it extracts the student ID
-4. It queries the school management system's REST API to check payment status
-5. If paid:
-   - Prints a ticket on the thermal printer
-   - Optionally displays success message on device
-6. If not paid:
-   - Displays error message on device
-   - Optionally prints error ticket
-
-## Device Setup
-
-Ensure students are enrolled in the SpeedFace M4 device with user IDs that match the school management system's student IDs.
-
-## Troubleshooting
-
-- Ensure the device IP and port are correct (default is 4370)
-- Check network connectivity between middleware and device
-- Verify school API endpoint and authentication
-- Confirm printer connectivity and ESC-POS compatibility
-
-## Security Considerations
-
-- Run the middleware on a secure network
-- Protect the school API with proper authentication
-- Limit access to the device management port
-- Store configuration files securely
+This project is licensed under the MIT License - see the LICENSE file for details.
