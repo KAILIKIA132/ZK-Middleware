@@ -50,12 +50,22 @@ cfg = {
     }
 }
 
+# Initialize services
 device_cfg = cfg["device"]
 api_cfg = cfg["school_api"]
 printer_cfg = cfg.get("printer", {})
 
-zk = ZKDevice(device_cfg["ip"], port=device_cfg.get("port", 4370), timeout=device_cfg.get("timeout", 10))
-printer = TicketPrinter(printer_cfg)
+# Global variables for services
+zk = None
+printer = None
+
+def init_services():
+    """Initialize services lazily to avoid issues with worker processes"""
+    global zk, printer
+    if zk is None:
+        zk = ZKDevice(device_cfg["ip"], port=device_cfg.get("port", 4370), timeout=device_cfg.get("timeout", 10))
+    if printer is None:
+        printer = TicketPrinter(printer_cfg)
 
 app = Flask(__name__, template_folder='templates')
 
@@ -89,6 +99,9 @@ def handle_log_entry(log):
     or object with attributes.
     We'll be defensive when parsing.
     """
+    # Initialize services if not already done
+    init_services()
+    
     # Example parsing - adapt to actual log structure
     try:
         # pyzk returns object with user_id or tuple. Try both
@@ -128,9 +141,18 @@ def handle_log_entry(log):
         logger.exception("Error processing log: %s", e)
 
 def polling_loop(poll_interval=5):
+    """Polling loop for device attendance logs"""
+    # Initialize services
+    init_services()
+    
     logger.info("Starting device polling loop")
     while True:
         try:
+            # Connect to device if not already connected
+            if not hasattr(zk, '_connected') or not zk._connected:
+                zk.connect()
+                zk._connected = True
+                
             logs = zk.pull_attendance()
             if logs:
                 for l in logs:
@@ -138,9 +160,12 @@ def polling_loop(poll_interval=5):
             time.sleep(poll_interval)
         except Exception as e:
             logger.exception("Polling loop error: %s. Reconnecting...", e)
-            zk.disconnect()
+            try:
+                zk.disconnect()
+                zk._connected = False
+            except:
+                pass
             time.sleep(5)
-            zk.connect()
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -148,6 +173,9 @@ def health():
 
 @app.route("/test-print", methods=["POST"])
 def test_print():
+    # Initialize services if not already done
+    init_services()
+    
     payload = request.json or {}
     student_name = payload.get("name", "Test Student")
     student_id = payload.get("id", "000")
@@ -157,6 +185,9 @@ def test_print():
 
 @app.route("/test-error", methods=["POST"])
 def test_error():
+    # Initialize services if not already done
+    init_services()
+    
     payload = request.json or {}
     message = payload.get("message", "Test error message")
     ok = printer.print_error(message)
@@ -215,6 +246,9 @@ def print_ticket():
     """
     Endpoint for printing tickets
     """
+    # Initialize services if not already done
+    init_services()
+    
     try:
         data = request.json or {}
         student_id = data.get("student_id")
@@ -237,10 +271,21 @@ def print_ticket():
         logger.exception("Error printing ticket: %s", e)
         return jsonify({"error": "Internal server error"}), 500
 
+def start_polling():
+    """Start the polling loop in a separate thread"""
+    # Only start polling in one worker process
+    if os.environ.get("POLLING_STARTED") != "true":
+        os.environ["POLLING_STARTED"] = "true"
+        polling_thread = threading.Thread(target=polling_loop, args=(3,), daemon=True)
+        polling_thread.start()
+        logger.info("Polling thread started")
+
 if __name__ == "__main__":
-    # Connect device before starting
-    zk.connect()
-    # Start polling in background thread
-    t = threading.Thread(target=polling_loop, args=(3,), daemon=True)
-    t.start()
+    # Initialize services
+    init_services()
+    
+    # Start polling in background thread (only in main process)
+    start_polling()
+    
+    # Run the Flask app
     app.run(host=cfg["app"]["listen_host"], port=cfg["app"]["listen_port"])
