@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZK Middleware Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status-card {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .status-card.success {
+            border-left: 4px solid #28a745;
+        }
+        .status-card.error {
+            border-left: 4px solid #dc3545;
+        }
+        .status-card.warning {
+            border-left: 4px solid #ffc107;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn.secondary {
+            background-color: #6c757d;
+        }
+        .btn.secondary:hover {
+            background-color: #545b62;
+        }
+        .btn.success {
+            background-color: #28a745;
+        }
+        .btn.success:hover {
+            background-color: #218838;
+        }
+        .btn.danger {
+            background-color: #dc3545;
+        }
+        .btn.danger:hover {
+            background-color: #c82333;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .actions {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ZK Middleware Administration</h1>
+        
+        <div class="status-card success">
+            <h3>System Status</h3>
+            <p><strong>Middleware:</strong> Running</p>
+            <p><strong>Device Connection:</strong> Connected</p>
+            <p><strong>Printer Status:</strong> Ready</p>
+        </div>
+        
+        <div class="status-card">
+            <h3>Device Information</h3>
+            <p><strong>Model:</strong> SpeedFace M4</p>
+            <p><strong>IP Address:</strong> 192.168.1.100</p>
+            <p><strong>Status:</strong> Active</p>
+        </div>
+        
+        <div class="actions">
+            <button class="btn success" onclick="testPrint()">Test Print</button>
+            <button class="btn secondary" onclick="refreshStatus()">Refresh Status</button>
+            <button class="btn danger" onclick="restartDevice()">Restart Device</button>
+        </div>
+        
+        <div class="status-card">
+            <h3>Recent Activity</h3>
+            <p>2025-10-22 14:30: Student John Smith - Access Granted</p>
+            <p>2025-10-22 14:25: Student Emma Johnson - Access Denied (Unpaid)</p>
+            <p>2025-10-22 14:20: Student Michael Brown - Access Granted</p>
+        </div>
+        
+        <div class="status-card warning">
+            <h3>System Logs</h3>
+            <p>[INFO] Connected to ZK device 192.168.1.100:4370</p>
+            <p>[INFO] Ticket printed for student 1001</p>
+            <p>[WARNING] Student 1002 not paid: api_error</p>
+        </div>
+    </div>
+
+    <script>
+        function testPrint() {
+            alert("Test print command sent!");
+            // In a real implementation, this would make an API call to the middleware
+        }
+        
+        function refreshStatus() {
+            alert("Refreshing system status...");
+            // In a real implementation, this would fetch updated status from the middleware
+        }
+        
+        function restartDevice() {
+            if (confirm("Are you sure you want to restart the device?")) {
+                alert("Device restart command sent!");
+                // In a real implementation, this would make an API call to the middleware
+            }
+        }
+    </script>
+</body>
+</html>

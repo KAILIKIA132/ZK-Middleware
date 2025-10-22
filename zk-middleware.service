@@ -1,0 +1,14 @@
+[Unit]
+Description=ZK Middleware for SpeedFace M4
+After=network.target
+
+[Service]
+Type=simple
+User=zkmiddleware
+WorkingDirectory=/opt/zk-middleware
+ExecStart=/opt/zk-middleware/venv/bin/python app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

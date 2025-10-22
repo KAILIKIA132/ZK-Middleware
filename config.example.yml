@@ -1,0 +1,18 @@
+device:
+  ip: "192.168.1.100"
+  port: 4370
+  timeout: 10
+
+school_api:
+  base_url: "https://school.example.com/api"
+  api_key: "REPLACE_WITH_SECRET"
+
+printer:
+  type: "network"          # or "local"
+  network:
+    host: "192.168.1.200"
+    port: 9100
+
+app:
+  listen_host: "0.0.0.0"
+  listen_port: 5000
