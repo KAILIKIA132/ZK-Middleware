@@ -1,0 +1,18 @@
+device:
+  ip: "192.168.1.100"
+  port: 4370
+  timeout: 10
+
+school_api:
+  base_url: "http://localhost:8080/api"
+  api_key: "test_api_key"
+
+printer:
+  type: "network"
+  network:
+    host: "192.168.1.200"
+    port: 9100
+
+app:
+  listen_host: "127.0.0.1"
+  listen_port: 5000

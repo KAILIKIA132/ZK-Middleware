@@ -1,0 +1,481 @@
+{
+	"info": {
+		"_postman_id": "zk-middleware-complete-testing",
+		"name": "ZK Middleware - Complete Testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"description": "Complete testing collection for ZK Middleware including enrollment, face scanning simulation, and all processes"
+	},
+	"item": [
+		{
+			"name": "System Health Checks",
+			"item": [
+				{
+					"name": "Middleware Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check the health status of the ZK Middleware"
+					},
+					"response": []
+				},
+				{
+					"name": "Mock API Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "Check the health status of the mock school API"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Student Enrollment Management",
+			"item": [
+				{
+					"name": "Get All Students (Mock API)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer test_api_key"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8080/api/students",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"students"
+							]
+						},
+						"description": "Get a list of all students from the mock API"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Student by ID (Mock API)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer test_api_key"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8080/api/students/{{student_id}}/fees",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"students",
+								"{{student_id}}",
+								"fees"
+							]
+						},
+						"description": "Get fee payment status for a specific student from the mock API"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Student by ID (Middleware)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/students/{{student_id}}/fees",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"students",
+								"{{student_id}}",
+								"fees"
+							]
+						},
+						"description": "Get fee payment status for a specific student through the middleware"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Face Scanning Simulation",
+			"item": [
+				{
+					"name": "Simulate Face Scan - Log Attendance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"student_id\": \"{{student_id}}\",\n  \"timestamp\": \"{{$isoTimestamp}}\",\n  \"device_id\": \"SpeedFace_M4_001\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5000/attendance",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"attendance"
+							]
+						},
+						"description": "Simulate a face scan by logging attendance - this triggers the complete workflow"
+					},
+					"response": []
+				},
+				{
+					"name": "Simulate Face Scan - Paid Student (1001)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"student_id\": \"1001\",\n  \"timestamp\": \"{{$isoTimestamp}}\",\n  \"device_id\": \"SpeedFace_M4_001\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5000/attendance",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"attendance"
+							]
+						},
+						"description": "Simulate a face scan for paid student Wangari Maathai"
+					},
+					"response": []
+				},
+				{
+					"name": "Simulate Face Scan - Unpaid Student (1002)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"student_id\": \"1002\",\n  \"timestamp\": \"{{$isoTimestamp}}\",\n  \"device_id\": \"SpeedFace_M4_001\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5000/attendance",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"attendance"
+							]
+						},
+						"description": "Simulate a face scan for unpaid student Jomo Kenyatta"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Ticket Printing Functions",
+			"item": [
+				{
+					"name": "Print Meal Ticket",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"student_id\": \"{{student_id}}\",\n  \"student_name\": \"{{student_name}}\",\n  \"meal_type\": \"Lunch\",\n  \"amount\": {{amount}}\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5000/print-ticket",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"print-ticket"
+							]
+						},
+						"description": "Print a meal ticket for a student"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Print",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test Student\",\n  \"id\": \"001\",\n  \"details\": \"Test printing\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5000/test-print",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"test-print"
+							]
+						},
+						"description": "Test the printer connection with a sample print"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Error Print",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"Test error message\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5000/test-error",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"test-error"
+							]
+						},
+						"description": "Test printing an error message"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin Functions",
+			"item": [
+				{
+					"name": "Admin Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/admin",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"admin"
+							]
+						},
+						"description": "Access the admin dashboard"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Complete Workflow Tests",
+			"item": [
+				{
+					"name": "Full Process - Paid Student",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test the complete workflow for a paid student",
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains success message\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.eql(\"Attendance logged successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"student_id\": \"1001\",\n  \"timestamp\": \"{{$isoTimestamp}}\",\n  \"device_id\": \"SpeedFace_M4_001\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5000/attendance",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"attendance"
+							]
+						},
+						"description": "Complete workflow test for paid student - simulates face scan and triggers all processes"
+					},
+					"response": []
+				},
+				{
+					"name": "Full Process - Unpaid Student",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test the complete workflow for an unpaid student",
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains success message\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.eql(\"Attendance logged successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"student_id\": \"1002\",\n  \"timestamp\": \"{{$isoTimestamp}}\",\n  \"device_id\": \"SpeedFace_M4_001\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5000/attendance",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"attendance"
+							]
+						},
+						"description": "Complete workflow test for unpaid student - simulates face scan and triggers all processes"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "student_id",
+			"value": "1001"
+		},
+		{
+			"key": "student_name",
+			"value": "Wangari Maathai"
+		},
+		{
+			"key": "amount",
+			"value": "150.00"
+		}
+	]
+}

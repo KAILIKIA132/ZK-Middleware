@@ -33,6 +33,22 @@ listen_host = os.environ.get("LISTEN_HOST", "0.0.0.0")
 listen_port = int(os.environ.get("PORT", "5000"))
 
 # Create config dictionary
+# Handle file-based printer configuration
+if printer_type == "file":
+    printer_file = os.environ.get("PRINTER_FILE", "/tmp/meal_card.txt")
+    printer_config = {
+        "type": printer_type,
+        "file": printer_file
+    }
+else:
+    printer_config = {
+        "type": printer_type,
+        "network": {
+            "host": printer_host,
+            "port": printer_port
+        }
+    }
+
 cfg = {
     "device": {
         "ip": device_ip,
@@ -43,13 +59,7 @@ cfg = {
         "base_url": school_api_base_url,
         "api_key": school_api_key
     },
-    "printer": {
-        "type": printer_type,
-        "network": {
-            "host": printer_host,
-            "port": printer_port
-        }
-    },
+    "printer": printer_config,
     "app": {
         "listen_host": listen_host,
         "listen_port": listen_port
@@ -139,9 +149,10 @@ def handle_log_entry(log):
         res = check_payment(student_id)
         if res.get("paid"):
             details = res.get("details", "Lunch payment confirmed")
-            # Print ticket
+            # Print ticket with student photo
             if printer is not None:
-                ok = printer.print_ticket(student_name=name, student_id=student_id, details=details)
+                photo_url = res.get("photo_url")
+                ok = printer.print_ticket(student_name=name, student_id=student_id, details=details, photo_url=photo_url)
                 if ok:
                     logger.info("Ticket printed for %s", student_id)
                     # optionally send device display success
@@ -157,7 +168,8 @@ def handle_log_entry(log):
             if zk is not None:
                 zk.send_display_message("Fee unpaid. Contact admin.")
             if printer is not None:
-                printer.print_error("Fee not paid for today's meal")
+                photo_url = res.get("photo_url")
+                printer.print_error("Fee not paid for today's meal", photo_url=photo_url)
             logger.info("Student %s not paid: %s", student_id, reason)
     except Exception as e:
         logger.exception("Error processing log: %s", e)
@@ -223,12 +235,52 @@ def test_error():
     
     payload = request.json or {}
     message = payload.get("message", "Test error message")
-    ok = printer.print_error(message)
+    photo_url = payload.get("photo_url")
+    ok = printer.print_error(message, photo_url=photo_url)
     return jsonify({"printed": ok})
 
 @app.route("/admin", methods=["GET"])
 def admin():
-    return render_template('admin.html')
+    # Prepare dynamic data for the admin template
+    
+    # Initialize services to check their status
+    init_services()
+    
+    # System status data
+    middleware_status = "running"
+    device_status = "connected" if zk and hasattr(zk, '_connected') and zk._connected else "disconnected"
+    printer_status = "ready" if printer and printer.printer else "not available"
+    
+    # Device information
+    device_model = "SpeedFace M4 (Simulated)"
+    device_ip = cfg.get("device", {}).get("ip", "192.168.1.100")
+    device_connection_status = "Active" if device_status == "connected" else "Inactive"
+    
+    # Recent activity (in a real implementation, this would come from a database or log)
+    recent_activity = [
+        {"timestamp": "2025-10-24 14:30", "student_name": "Wangari Maathai", "status": "Access Granted"},
+        {"timestamp": "2025-10-24 14:25", "student_name": "Jomo Kenyatta", "status": "Access Denied (Unpaid)"},
+        {"timestamp": "2025-10-24 14:20", "student_name": "Chinua Achebe", "status": "Access Granted"}
+    ]
+    
+    # System logs (in a real implementation, this would come from actual logs)
+    system_logs = [
+        "[INFO] Middleware started successfully",
+        "[INFO] Attempting to connect to ZK device 192.168.1.100:4370",
+        "[WARNING] Failed to connect to ZK device: can't reach device (ping 192.168.1.100)",
+        "[INFO] Printer initialization completed",
+        "[INFO] Mock school API connection established"
+    ]
+    
+    return render_template('admin.html', 
+                         middleware_status=middleware_status,
+                         device_status=device_status,
+                         printer_status=printer_status,
+                         device_model=device_model,
+                         device_ip=device_ip,
+                         device_connection_status=device_connection_status,
+                         recent_activity=recent_activity,
+                         system_logs=system_logs)
 
 @app.route("/students/<student_id>/fees", methods=["GET"])
 def student_fees(student_id):
@@ -236,18 +288,13 @@ def student_fees(student_id):
     Endpoint for checking student payment status
     """
     try:
-        # In a real implementation, this would check the actual payment status
-        # For now, we'll return mock data
-        mock_data = {
-            "1": {"paid": True, "details": "Lunch payment confirmed", "amount": 5.50},
-            "2": {"paid": True, "details": "Lunch payment confirmed", "amount": 5.50},
-            "3": {"paid": False, "details": "Lunch payment not found", "amount": 5.50}
-        }
+        # Call the school API to check payment status
+        result = check_payment(student_id)
         
-        if student_id in mock_data:
-            return jsonify(mock_data[student_id])
+        if "error" in result:
+            return jsonify(result), 500
         else:
-            return jsonify({"paid": False, "details": "Student not found"}), 404
+            return jsonify(result)
     except Exception as e:
         logger.exception("Error checking student fees: %s", e)
         return jsonify({"paid": False, "details": "Internal server error"}), 500
@@ -292,12 +339,13 @@ def print_ticket():
         meal_type = data.get("meal_type", "Lunch")
         amount = data.get("amount", 0.0)
         timestamp = data.get("timestamp")
+        photo_url = data.get("photo_url")
         
         if not student_id:
             return jsonify({"error": "student_id is required"}), 400
             
         details = f"{meal_type} - R{amount:.2f}"
-        ok = printer.print_ticket(student_name, student_id, details)
+        ok = printer.print_ticket(student_name, student_id, details, photo_url=photo_url)
         
         if ok:
             return jsonify({"message": "Ticket printed successfully"}), 200

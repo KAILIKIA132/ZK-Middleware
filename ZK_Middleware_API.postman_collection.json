@@ -1,0 +1,295 @@
+{
+	"info": {
+		"_postman_id": "zk-middleware-api-collection",
+		"name": "ZK Middleware API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"description": "API collection for testing the ZK Middleware for Canteen Management System"
+	},
+	"item": [
+		{
+			"name": "Middleware Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"health"
+					]
+				},
+				"description": "Check the health status of the ZK Middleware"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Student Fees Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/students/:student_id/fees",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"students",
+						":student_id",
+						"fees"
+					],
+					"variable": [
+						{
+							"key": "student_id",
+							"value": "1001"
+						}
+					]
+				},
+				"description": "Check the fee payment status for a specific student"
+			},
+			"response": []
+		},
+		{
+			"name": "Log Attendance",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"student_id\": \"12345\",\n  \"timestamp\": \"2025-10-24T10:00:00\",\n  \"device_id\": \"zk_device_001\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/attendance",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"attendance"
+					]
+				},
+				"description": "Log an attendance entry for a student"
+			},
+			"response": []
+		},
+		{
+			"name": "Print Meal Ticket",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"student_id\": \"12345\",\n  \"student_name\": \"John Doe\",\n  \"meal_type\": \"Lunch\",\n  \"amount\": 150.00,\n  \"timestamp\": \"2025-10-24T12:30:00\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/print-ticket",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"print-ticket"
+					]
+				},
+				"description": "Print a meal ticket for a student"
+			},
+			"response": []
+		},
+		{
+			"name": "Test Print",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Test Student\",\n  \"id\": \"001\",\n  \"details\": \"Test printing\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/test-print",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"test-print"
+					]
+				},
+				"description": "Test the printer connection with a sample print"
+			},
+			"response": []
+		},
+		{
+			"name": "Test Error Print",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"message\": \"Test error message\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/test-error",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"test-error"
+					]
+				},
+				"description": "Test printing an error message"
+			},
+			"response": []
+		},
+		{
+			"name": "Admin Dashboard",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/admin",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"admin"
+					]
+				},
+				"description": "Access the admin dashboard"
+			},
+			"response": []
+		},
+		{
+			"name": "Mock API Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"health"
+					]
+				},
+				"description": "Check the health status of the mock school API"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Student Fees (Mock API)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer test_api_key"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/students/:student_id/fees",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"students",
+						":student_id",
+						"fees"
+					],
+					"variable": [
+						{
+							"key": "student_id",
+							"value": "1001"
+						}
+					]
+				},
+				"description": "Get fee payment status for a student from the mock API"
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Students (Mock API)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer test_api_key"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/students",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"students"
+					]
+				},
+				"description": "Get a list of all students from the mock API"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

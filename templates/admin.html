@@ -85,24 +85,29 @@
             text-align: center;
             margin: 20px 0;
         }
+        .log-entry {
+            font-family: monospace;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ZK Middleware Administration</h1>
         
-        <div class="status-card success">
+        <div class="status-card {% if middleware_status == 'running' %}success{% else %}error{% endif %}">
             <h3>System Status</h3>
-            <p><strong>Middleware:</strong> Running</p>
-            <p><strong>Device Connection:</strong> Connected</p>
-            <p><strong>Printer Status:</strong> Ready</p>
+            <p><strong>Middleware:</strong> {{ middleware_status|title }}</p>
+            <p><strong>Device Connection:</strong> {{ device_status|title }}</p>
+            <p><strong>Printer Status:</strong> {{ printer_status|title }}</p>
         </div>
         
         <div class="status-card">
             <h3>Device Information</h3>
-            <p><strong>Model:</strong> SpeedFace M4</p>
-            <p><strong>IP Address:</strong> 192.168.1.100</p>
-            <p><strong>Status:</strong> Active</p>
+            <p><strong>Model:</strong> {{ device_model }}</p>
+            <p><strong>IP Address:</strong> {{ device_ip }}</p>
+            <p><strong>Status:</strong> {{ device_connection_status|title }}</p>
         </div>
         
         <div class="actions">
@@ -113,34 +118,56 @@
         
         <div class="status-card">
             <h3>Recent Activity</h3>
-            <p>2025-10-22 14:30: Student John Smith - Access Granted</p>
-            <p>2025-10-22 14:25: Student Emma Johnson - Access Denied (Unpaid)</p>
-            <p>2025-10-22 14:20: Student Michael Brown - Access Granted</p>
+            {% for activity in recent_activity %}
+            <p>{{ activity.timestamp }}: {{ activity.student_name }} - {{ activity.status }}</p>
+            {% else %}
+            <p>No recent activity</p>
+            {% endfor %}
         </div>
         
-        <div class="status-card warning">
+        <div class="status-card {% if system_logs|length > 0 and 'ERROR' in system_logs[-1] %}error{% elif system_logs|length > 0 and 'WARNING' in system_logs[-1] %}warning{% else %}success{% endif %}">
             <h3>System Logs</h3>
-            <p>[INFO] Connected to ZK device 192.168.1.100:4370</p>
-            <p>[INFO] Ticket printed for student 1001</p>
-            <p>[WARNING] Student 1002 not paid: api_error</p>
+            {% for log in system_logs[-5:] %}
+            <p class="log-entry">{{ log }}</p>
+            {% else %}
+            <p>No recent logs</p>
+            {% endfor %}
         </div>
     </div>
 
     <script>
         function testPrint() {
-            alert("Test print command sent!");
-            // In a real implementation, this would make an API call to the middleware
+            fetch('/test-print', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: 'Admin Test',
+                    id: 'admin_test',
+                    details: 'Admin panel test print'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.printed) {
+                    alert('Test print successful!');
+                } else {
+                    alert('Test print failed: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Test print failed: ' + error.message);
+            });
         }
         
         function refreshStatus() {
-            alert("Refreshing system status...");
-            // In a real implementation, this would fetch updated status from the middleware
+            location.reload();
         }
         
         function restartDevice() {
-            if (confirm("Are you sure you want to restart the device?")) {
-                alert("Device restart command sent!");
-                // In a real implementation, this would make an API call to the middleware
+            if (confirm("Are you sure you want to restart the device? This will disconnect and reconnect to the ZK device.")) {
+                alert("Device restart command sent! (This is a simulation in the local environment)");
             }
         }
     </script>
